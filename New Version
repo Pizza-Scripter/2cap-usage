@@ -1,0 +1,120 @@
+import requests
+import random
+import os
+from time import sleep
+from threading import Thread
+import threading
+import time
+import json
+TaskCount = 0
+APIkey=REDACTED # gotta keep hidden
+
+reportTypeDict = {
+    1:"reportgood",
+    2:"reportbad"
+}
+reportG=0
+reportB=0
+unsolveable=0
+class report:
+    def reportReq(self):
+        try:
+            myUrl = "http://2captcha.com/res.php?key={}&action={}&id={}".format(APIkey,self.reportType,self.captchaId)
+
+                
+            r = requests.get(myUrl)
+
+            if r.text == "OK_REPORT_RECORDED":
+
+                if self.reportType == "reportgood":
+                    global reportG
+                    reportG+=1
+                    print('[{}] Reported Good'.format(reportG))
+                else:
+                    global reportB
+                    reportB += 1
+                    print('[{}] Reported Bad'.format(reportB))
+            else:
+                print(r.text)
+
+        except Exception as e:
+            print(e)
+            return
+
+    def __init__(self,capNum,reportNum):
+        if reportNum == 1:
+            self.reportType = "reportgood"
+        else:
+            self.reportType = "reportbad"
+        self.captchaId = capNum
+        self.reportReq()
+
+class CaptchaSolver:
+
+    def SendProxylessTask(self):
+        try:
+
+            
+            urlGiven = 'https://2captcha.com/in.php?key={}&method=funcaptcha&publickey={}&surl=https://roblox-api.arkoselabs.com&pageurl={}&data[key]={}&userAgent={}'.format(self.APIKEY,self.pKey,self.siteurl,self.blob,self.uaSend)
+            if self.proxy != None:
+                print("ye using proxy")
+                urlGiven = "https://2captcha.com/in.php?key={}&method=funcaptcha&publickey={}&surl=https://roblox-api.arkoselabs.com&pageurl={}&data[key]={}&userAgent={}&proxytype=HTTPS&proxy={}".format(self.APIKEY,self.pKey,self.siteurl,self.blob,self.uaSend,self.proxy)
+            r = requests.get(urlGiven)
+            if 'NO_SLOT' in r.text:
+                sleep(random.randint(1,4))
+                self.SendProxylessTask()
+                return
+
+            if 'OK|' in r.text:
+
+                global TaskCount
+                TaskCount = TaskCount + 1 
+                print('[{}] Sent Task!'.format(TaskCount))
+                self.ide = r.text.split('OK|')[1]
+                sleep(15)
+                self.GetResult()
+            else:
+                print(r.text)
+                print('[{}] Active Threads'.format(threading.active_count()))
+        except Exception as e:
+            print(e)
+            return False
+    def GetResult(self):
+        try:
+            r = requests.get('https://2captcha.com/res.php?key={}&action=get&id={}'.format(self.APIKEY,self.ide))
+            #print(r.text)
+            if 'OK' in r.text:
+                self.Token = r.text.split('OK|')[1]
+                #self.Token = self.Token.split('|')[0]+'|'+self.Token.split('|')[1]
+                #print(self.Token)
+                return
+                #nojs = self.Token.split('|')[0]+'|'+self.Token.split('|')[1]
+
+
+                
+            if 'UNSOLV' in r.text:
+                global unsolveable
+                unsolveable+=1
+                print("[{}] unsolvable".format(unsolveable))
+                return self.SendProxylessTask()
+            if 'APCHA_NOT_READY' in r.text:
+                sleep(5)
+                return self.GetResult()
+            print(r.text)
+            
+        except Exception as e:
+            print(e)
+            return False
+            
+    def __init__(self,userAgent,blob,groupid,proxy=None):
+        self.blob=blob
+        self.uaSend = userAgent
+        self.Token = None
+        self.proxy = proxy
+
+        self.APIKEY = APIkey
+        self.siteurl = "https://www.roblox.com/groups/{}/unnamed#!/about".format(groupid)#'https://www.roblox.com/develop/groups/{}?View={}'.format(Groupid,AssetType)
+        self.pKey = '63E4117F-E727-42B4-6DAA-C8448E9B137F'
+        self.SendProxylessTask()
+
+#
